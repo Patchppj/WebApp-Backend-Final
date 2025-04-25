@@ -3,3 +3,6 @@ uvicorn
 xgboost
 numpy
 pydantic
+#openpyxl>=3.0.10
+gspread
+oauth2client

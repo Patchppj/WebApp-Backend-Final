@@ -12,6 +12,7 @@ class UserData(BaseModel):
     livingDuration: float = Field(default=0, ge=0)
     
     # โรคประจำตัว
+    chronicDisease : str = Field(default="")
     fattyLiver: int = Field(default=0, ge=0)
     coronaryAetery: int = Field(default=0, ge=0)
     chronicKidney: int = Field(default=0, ge=0)
