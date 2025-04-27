@@ -6,6 +6,7 @@ import numpy as np
 from pathlib import Path
 import xgboost as xgb  # เพิ่ม import xgboost
 from ..schemas.userData import UserData
+from ..utils.google_sheets import save_prediction_to_sheet
 
 router = APIRouter(
     prefix="/diabetes",
@@ -245,12 +246,27 @@ async def predict_risk(data: UserData):
         else:
             risk_level = "คุณไม่มีความเสี่ยง"
         
-        return {
+        # สร้างข้อมูลผลลัพธ์
+        result = {
             "prediction": float(risk_score),
             "risk_level": risk_level,
             "risk_percentage": float(risk_score * 100),
             "features_used": feature_array.tolist()
         }
+        
+        # บันทึกข้อมูลลงใน Google Sheets
+        try:
+            # คุณสามารถเปลี่ยนชื่อ Google Sheets ได้ตรงนี้
+            sheet_name = "DiabetesPredictions"  # เปลี่ยนเป็นชื่อ Google Sheets ที่คุณสร้างไว้
+            save_success = save_prediction_to_sheet(data, result, sheet_name)
+            if save_success:
+                print(f"บันทึกข้อมูลลง Google Sheets '{sheet_name}' สำเร็จ")
+            else:
+                print(f"ไม่สามารถบันทึกข้อมูลลง Google Sheets '{sheet_name}' ได้")
+        except Exception as e:
+            print(f"เกิดข้อผิดพลาดในการบันทึกข้อมูล: {str(e)}")
+            
+        return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"เกิดข้อผิดพลาด: {str(e)}")
 
