@@ -1,6 +1,10 @@
 from pydantic import BaseModel, Field
+from typing import Optional, Union
 
 class UserData(BaseModel):
+    # session ID สำหรับเชื่อมโยงข้อมูลระหว่างเส้น
+    session_id: Optional[str] = None
+    
     # ข้อมูลส่วนตัว
     sex: int = Field(default=0, ge=0)
     age: int = Field(default=0, ge=0)
@@ -13,10 +17,12 @@ class UserData(BaseModel):
     
     # โรคประจำตัว
     chronicDisease : str = Field(default="")
+    chronicDisease : str = Field(default="")
     fattyLiver: int = Field(default=0, ge=0)
     coronaryAetery: int = Field(default=0, ge=0)
     chronicKidney: int = Field(default=0, ge=0)
     diseaseFamily: int = Field(default=0, ge=0)
+
     
     # พฤติกรรม
     smoking: int = Field(default=0, ge=0)

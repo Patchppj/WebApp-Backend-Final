@@ -6,6 +6,7 @@ import numpy as np
 from pathlib import Path
 import xgboost as xgb  # เพิ่ม import xgboost
 from ..schemas.userData import UserData
+from ..utils.combined_data_service import store_prediction_data, save_combined_data_to_sheet, generate_session_id
 
 router = APIRouter(
     prefix="/hypertention",
@@ -322,12 +323,39 @@ async def predict_risk(data: UserData):
         else:
             risk_level = "คุณไม่มีความเสี่ยง"
         
-        return {
+        # สร้างผลลัพธ์
+        result = {
             "prediction": float(risk_score),
             "risk_level": risk_level,
             "risk_percentage": float(risk_score * 100),
             "features_used": feature_array.tolist()
         }
+        
+        # บันทึกข้อมูลลงใน Google Sheets โดยใช้ combined_data_service
+        try:
+            # สร้าง session_id หรือใช้จาก request ถ้ามี
+            session_id = data.session_id if hasattr(data, 'session_id') and data.session_id else generate_session_id()
+            
+            # เก็บข้อมูลการทำนายความดัน
+            is_ready = store_prediction_data(session_id, "hypertention", data, result)
+            
+            # ถ้ามีข้อมูลครบทั้งสองประเภท (เบาหวานและความดัน) ให้บันทึกลง Google Sheets
+            if is_ready:
+                sheet_name = "DiabetesPredictions"  # ชื่อ Google Sheets สำหรับข้อมูลรวม
+                save_success = save_combined_data_to_sheet(session_id, sheet_name)
+                if save_success:
+                    print(f"บันทึกข้อมูลลง Google Sheets '{sheet_name}' สำเร็จ1111")
+                else:
+                    print(f"ไม่สามารถบันทึกข้อมูลลง Google Sheets '{sheet_name}' ได้")
+            else:
+                print(f"รอข้อมูลเบาหวานสำหรับ session ID: {session_id}")
+                
+            # เพิ่ม session_id ในผลลัพธ์เพื่อใช้เชื่อมโยงกับข้อมูลเบาหวาน
+            result["session_id"] = session_id
+        except Exception as e:
+            print(f"เกิดข้อผิดพลาดในการบันทึกข้อมูล: {str(e)}")
+        
+        return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"เกิดข้อผิดพลาด: {str(e)}")
 

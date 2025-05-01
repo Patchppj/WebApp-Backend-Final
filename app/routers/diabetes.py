@@ -6,7 +6,7 @@ import numpy as np
 from pathlib import Path
 import xgboost as xgb  # เพิ่ม import xgboost
 from ..schemas.userData import UserData
-from ..utils.google_sheets import save_prediction_to_sheet
+from ..utils.combined_data_service import store_prediction_data, save_combined_data_to_sheet, generate_session_id
 
 router = APIRouter(
     prefix="/diabetes",
@@ -254,15 +254,27 @@ async def predict_risk(data: UserData):
             "features_used": feature_array.tolist()
         }
         
-        # บันทึกข้อมูลลงใน Google Sheets
+        # บันทึกข้อมูลลงใน Google Sheets โดยใช้ combined_data_service
         try:
-            # คุณสามารถเปลี่ยนชื่อ Google Sheets ได้ตรงนี้
-            sheet_name = "DiabetesPredictions"  # เปลี่ยนเป็นชื่อ Google Sheets ที่คุณสร้างไว้
-            save_success = save_prediction_to_sheet(data, result, sheet_name)
-            if save_success:
-                print(f"บันทึกข้อมูลลง Google Sheets '{sheet_name}' สำเร็จ")
+            # สร้าง session_id หรือใช้จาก request ถ้ามี
+            session_id = data.session_id if hasattr(data, 'session_id') and data.session_id else generate_session_id()
+            
+            # เก็บข้อมูลการทำนายเบาหวาน
+            is_ready = store_prediction_data(session_id, "diabetes", data, result)
+            
+            # ถ้ามีข้อมูลครบทั้งสองประเภท (เบาหวานและความดัน) ให้บันทึกลง Google Sheets
+            if is_ready:
+                sheet_name = "DiabetesPredictions"  # ชื่อ Google Sheets สำหรับข้อมูลรวม
+                save_success = save_combined_data_to_sheet(session_id, sheet_name)
+                if save_success:
+                    print(f"บันทึกข้อมูลลง Google Sheets '{sheet_name}' สำเร็จ")
+                else:
+                    print(f"ไม่สามารถบันทึกข้อมูลลง Google Sheets '{sheet_name}' ได้")
             else:
-                print(f"ไม่สามารถบันทึกข้อมูลลง Google Sheets '{sheet_name}' ได้")
+                print(f"รอข้อมูลความดันสำหรับ session ID: {session_id}")
+                
+            # เพิ่ม session_id ในผลลัพธ์เพื่อใช้เชื่อมโยงกับข้อมูลความดัน
+            result["session_id"] = session_id
         except Exception as e:
             print(f"เกิดข้อผิดพลาดในการบันทึกข้อมูล: {str(e)}")
             
