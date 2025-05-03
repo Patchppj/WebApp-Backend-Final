@@ -120,7 +120,7 @@ def get_google_sheet(sheet_name):
         
         # เชื่อมต่อกับ Google Sheets API
         print("กำลังเชื่อมต่อกับ Google Sheets API...")
-        credentials = ServiceAccountCredentials.from_json_keyfile_name(     {
+        credentials = ServiceAccountCredentials.from_json_keyfile_name({
   "type": "service_account",
   "project_id": "web-application-457810",
   "private_key_id": "8bcaaff4b80a1e56b8b1191f9f7abf0c9dba4acd",
@@ -132,7 +132,8 @@ def get_google_sheet(sheet_name):
   "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
   "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/direbetes%40web-application-457810.iam.gserviceaccount.com",
   "universe_domain": "googleapis.com"
-}, scope)
+}
+, scope)
         client = gspread.authorize(credentials)
         
         # เปิดชีทที่ต้องการ
